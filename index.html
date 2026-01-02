@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finanças Pro | Cloud</title>
+    <title>Finanças Família Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1077/1077976.png">
+    <meta name="apple-mobile-web-app-title" content="Finanças">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -14,131 +19,147 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --primary: #3b82f6; --bg: #0f172a; --card-bg: rgba(255, 255, 255, 0.05); }
+        :root { --primary: #3b82f6; --success: #10b981; --danger: #f43f5e; --warning: #f59e0b; --bg: #0f172a; --card: #1e293b; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        
-        body { background-color: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
+        body { background: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
 
-        /* Estrutura Principal */
-        .app-container { display: flex; height: 100vh; width: 100vw; }
+        .app-container { display: flex; height: 100vh; width: 100vw; flex-direction: column; }
+        .content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
 
-        /* Sidebar (Desktop) */
-        .sidebar { width: 260px; background: #1e293b; padding: 2rem; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.1); }
-        
-        /* Menu Inferior (Mobile) */
-        .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: #1e293b; height: 70px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; justify-content: space-around; align-items: center; }
+        /* Dashboard Cards */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .card { background: var(--card); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+        .card span { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        .card h2 { font-size: 18px; margin-top: 4px; }
 
-        .content-area { flex: 1; overflow-y: auto; padding: 1.5rem; padding-bottom: 80px; /* Espaço para o menu mobile */ }
+        /* Nav */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--card); height: 75px; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; z-index: 100; }
+        .nav-item { background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: 12px; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 20px; }
 
-        /* Botões de Navegação */
-        .nav-link { background: none; border: none; color: #94a3b8; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 12px; transition: 0.3s; font-size: 1rem; text-decoration: none; }
-        .nav-link.active { background: rgba(59, 130, 246, 0.2); color: #fff; }
-        .mobile-nav .nav-link { flex-direction: column; gap: 4px; font-size: 0.7rem; padding: 10px; }
-        .mobile-nav .nav-link i { font-size: 1.2rem; }
+        /* Tabs */
+        .tab { display: none; }
+        .tab.active { display: block; animation: fadeIn 0.3s; }
 
-        /* Cartões e Layout */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-        .card { background: var(--card-bg); padding: 1rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
-        .card span { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
-        .card h2 { font-size: 1.2rem; margin-top: 5px; }
+        /* Category Icons/Colors Mapping */
+        .cat-tag { display: flex; align-items: center; gap: 5px; font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-top: 5px; width: fit-content; }
+        .cat-alimentacao { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .cat-moradia { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .cat-transporte { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .cat-lazer { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .cat-salario { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        .cat-saude { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
 
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        /* Metrics List */
+        .metric-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; color: #94a3b8; }
+        .metric-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; flex: 1; margin: 0 10px; overflow: hidden; }
+        .metric-fill { height: 100%; background: var(--primary); }
 
-        .glass-box { background: var(--card-bg); border-radius: 16px; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.05); }
+        /* Inputs */
+        .input-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 12px; color: #fff; font-size: 16px; }
+        .btn { width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 15px; color: #fff; font-weight: 600; cursor: pointer; }
+        .filter-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 
-        /* Tabela Responsiva */
-        .scroll-table { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 400px; }
-        th { text-align: left; padding: 10px; color: #94a3b8; font-size: 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        td { padding: 12px 10px; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-        /* Formulário */
-        .input-group { margin-bottom: 1rem; }
-        input, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; color: #fff; margin-top: 5px; }
-        .btn { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* REGRAS PARA CELULAR */
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .mobile-nav { display: flex; }
-            .content-area { padding: 1rem; padding-bottom: 90px; }
-            .grid { grid-template-columns: 1fr 1fr; }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <aside class="sidebar">
-            <h2 style="color:var(--primary); margin-bottom:2rem;"><i class="fas fa-wallet"></i> Finanças</h2>
-            <button class="nav-link active" onclick="switchTab('dashboard', this)"><i class="fas fa-home"></i> Início</button>
-            <button class="nav-link" onclick="switchTab('relatorios', this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
-            <button class="nav-link" onclick="switchTab('lancamentos', this)"><i class="fas fa-plus-circle"></i> Novo</button>
-        </aside>
-
-        <nav class="mobile-nav">
-            <button class="nav-link active" onclick="switchTab('dashboard', this)"><i class="fas fa-home"></i> Início</button>
-            <button class="nav-link" onclick="switchTab('relatorios', this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
-            <button class="nav-link" onclick="switchTab('lancamentos', this)"><i class="fas fa-plus-circle"></i> Novo</button>
-        </nav>
-
-        <main class="content-area">
-            <section id="dashboard" class="tab-content active">
-                <div class="grid">
-                    <div class="card"><span>Saldo</span><h2 id="card-saldo">R$ 0,00</h2></div>
-                    <div class="card"><span>Saúde</span><h2 id="score-val" style="color:#3b82f6">--</h2></div>
-                    <div class="card"><span>Entradas</span><h2 id="card-rec" style="color:#10b981">R$ 0,00</h2></div>
-                    <div class="card"><span>Saídas</span><h2 id="card-des" style="color:#f43f5e">R$ 0,00</h2></div>
-                </div>
-
-                <div class="glass-box"><canvas id="chartEvolucao" style="max-height:200px;"></canvas></div>
-
-                <div class="glass-box">
-                    <h3 style="margin-bottom:1rem; font-size:1rem;">Histórico</h3>
-                    <div class="scroll-table">
-                        <table>
-                            <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
-                            <tbody id="table-body"></tbody>
-                        </table>
+        <main class="content">
+            
+            <section id="home" class="tab active">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3>Início</h3>
+                    <div class="card" style="padding: 5px 15px; border-radius: 10px;">
+                        <span style="font-size:9px;">Score</span>
+                        <h4 id="score-val" style="color:var(--primary)">0</h4>
                     </div>
                 </div>
+
+                <div class="grid">
+                    <div class="card" style="grid-column: span 2; background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                        <span>Saldo Disponível</span><h2 id="bal-total">R$ 0,00</h2>
+                    </div>
+                    <div class="card"><span>Entradas</span><h2 id="bal-rec" style="color:var(--success)">R$ 0,00</h2></div>
+                    <div class="card"><span>Saídas</span><h2 id="bal-des" style="color:var(--danger)">R$ 0,00</h2></div>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <span>Gastos por Categoria (%)</span>
+                    <div id="metrics-container" style="margin-top:15px;"></div>
+                </div>
+
+                <h4>Histórico Recente</h4>
+                <div id="lista-transacoes"></div>
             </section>
 
-            <section id="relatorios" class="tab-content">
-                <div class="glass-box"><h4>Gastos por Categoria</h4><canvas id="chartPie"></canvas></div>
-                <div class="glass-box"><h4>Balanço Mensal</h4><canvas id="chartBar"></canvas></div>
-            </section>
-
-            <section id="lancamentos" class="tab-content">
-                <div class="glass-box">
-                    <h3>Novo Registro</h3><br>
-                    <form id="form-finance">
-                        <div class="input-group"><label>O que foi?</label><input type="text" id="f-desc" required></div>
-                        <div class="input-group"><label>Quanto?</label><input type="number" step="0.01" id="f-valor" required></div>
+            <section id="add" class="tab">
+                <h3 id="form-title">Novo Lançamento</h3><br>
+                <div class="card">
+                    <form id="finance-form">
+                        <input type="hidden" id="edit-id">
+                        <div class="input-group"><label>O que foi?</label><input type="text" id="desc" required></div>
+                        <div class="input-group"><label>Quanto? (R$)</label><input type="number" step="0.01" id="valor" required></div>
                         <div class="input-group">
                             <label>Tipo</label>
-                            <select id="f-tipo"><option value="receita">Receita (+)</option><option value="despesa">Despesa (-)</option></select>
+                            <select id="tipo">
+                                <option value="despesa">Saída (-)</option>
+                                <option value="receita">Entrada (+)</option>
+                            </select>
                         </div>
                         <div class="input-group">
                             <label>Categoria</label>
-                            <select id="f-cat">
-                                <option>Alimentação</option><option>Salário</option><option>Moradia</option>
-                                <option>Transporte</option><option>Lazer</option><option>Outros</option>
+                            <select id="cat">
+                                <option value="Alimentação">🍴 Alimentação</option>
+                                <option value="Moradia">🏠 Moradia</option>
+                                <option value="Transporte">🚗 Transporte</option>
+                                <option value="Lazer">🎡 Lazer</option>
+                                <option value="Salário">💰 Salário</option>
+                                <option value="Saúde">🏥 Saúde</option>
+                                <option value="Outros">📦 Outros</option>
                             </select>
                         </div>
-                        <div class="input-group"><label>Data</label><input type="date" id="f-data" required></div>
-                        <button type="submit" class="btn">Salvar na Nuvem</button>
+                        <div class="input-group"><label>Data</label><input type="date" id="data" required></div>
+                        <button type="submit" class="btn" id="btn-save">Salvar na Nuvem</button>
                     </form>
                 </div>
             </section>
+
+            <section id="reports" class="tab">
+                <h3>Relatórios</h3><br>
+                
+                <div class="filter-container">
+                    <div><span style="font-size:10px;">De:</span><input type="date" id="f-start" onchange="updateUI()"></div>
+                    <div><span style="font-size:10px;">Até:</span><input type="date" id="f-end" onchange="updateUI()"></div>
+                </div>
+
+                <div class="card" style="margin-bottom:15px;">
+                    <span>Fluxo de Caixa (Saídas vs Entradas)</span>
+                    <canvas id="chartFluxo" height="200"></canvas>
+                </div>
+
+                <div class="grid">
+                    <div class="card"><span>Ganhos (%)</span><canvas id="chartGanhos"></canvas></div>
+                    <div class="card"><span>Gastos (%)</span><canvas id="chartGastos"></canvas></div>
+                </div>
+                
+                <button onclick="exportarPDF()" class="btn" style="background:#475569; margin-top:15px;"><i class="fas fa-file-pdf"></i> Gerar Relatório PDF</button>
+            </section>
+
         </main>
+
+        <nav class="nav-bar">
+            <button class="nav-item active" onclick="switchTab('home', this)"><i class="fas fa-home"></i>Início</button>
+            <button class="nav-item" onclick="switchTab('add', this)"><i class="fas fa-plus-circle" style="font-size:30px; color:var(--primary)"></i>Novo</button>
+            <button class="nav-item" onclick="switchTab('reports', this)"><i class="fas fa-chart-pie"></i>Relatório</button>
+        </nav>
     </div>
 
     <script>
-        // === CONFIGURAÇÃO FIREBASE ===
+        // CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAP1tmLggzgyOtDeXu3MEtFXCVI5GJGPPk",
             authDomain: "financeiro-f5b93.firebaseapp.com",
@@ -148,100 +169,167 @@
             messagingSenderId: "1006424381126",
             appId: "1:1006424381126:web:dfd6893d0991a5013aa9c7"
         };
-        // ============================
 
         firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref('meu_fluxo');
-        let transactions = [];
+        const db = firebase.database().ref('finance_data');
+
+        let dataList = [];
         let charts = {};
 
-        dbRef.on('value', (s) => {
-            const val = s.val();
-            transactions = val ? Object.values(val) : [];
-            updateUI();
-        });
-
-        function switchTab(id, btn) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            
-            // Ativa botão no menu desktop e mobile simultaneamente
-            document.querySelectorAll(`button[onclick*="${id}"]`).forEach(b => b.classList.add('active'));
-            if(id === 'relatorios') updateUI();
-        }
-
-        document.getElementById('form-finance').onsubmit = (e) => {
-            e.preventDefault();
-            const id = Date.now();
-            const data = {
-                id,
-                desc: document.getElementById('f-desc').value,
-                valor: parseFloat(document.getElementById('f-valor').value),
-                tipo: document.getElementById('f-tipo').value,
-                cat: document.getElementById('f-cat').value,
-                data: document.getElementById('f-data').value
-            };
-            firebase.database().ref('meu_fluxo/' + id).set(data);
-            document.getElementById('form-finance').reset();
-            switchTab('dashboard');
-        };
-
-        function deleteMov(id) {
-            if(confirm("Apagar?")) firebase.database().ref('meu_fluxo/' + id).remove();
-        }
-
-        function updateUI() {
-            let rec = 0, des = 0;
-            const body = document.getElementById('table-body');
-            body.innerHTML = '';
-
-            const sorted = transactions.sort((a,b) => new Date(b.data) - new Date(a.data));
-
-            sorted.forEach(m => {
-                if(m.tipo === 'receita') rec += m.valor; else des += m.valor;
-                body.innerHTML += `<tr>
-                    <td>${m.data.split('-').reverse().slice(0,2).join('/')}</td>
-                    <td>${m.desc}</td>
-                    <td style="color:${m.tipo==='receita'?'#10b981':'#f43f5e'}">${m.tipo==='receita'?'+':'-'}${m.valor.toFixed(2)}</td>
-                    <td><i class="fas fa-trash" onclick="deleteMov(${m.id})"></i></td>
-                </tr>`;
-            });
-
-            document.getElementById('card-saldo').innerText = `R$ ${(rec-des).toFixed(2)}`;
-            document.getElementById('card-rec').innerText = `R$ ${rec.toFixed(2)}`;
-            document.getElementById('card-des').innerText = `R$ ${des.toFixed(2)}`;
-            
-            const score = rec > 0 ? Math.max(0, Math.round(100 - (des/rec * 100))) : 0;
-            document.getElementById('score-val').innerText = score;
-
-            renderCharts(sorted, rec, des);
-        }
-
-        function renderCharts(dados, rec, des) {
-            const ctxL = document.getElementById('chartEvolucao').getContext('2d');
-            if(charts.line) charts.line.destroy();
-            charts.line = new Chart(ctxL, {
-                type: 'line',
-                data: {
-                    labels: dados.slice(0,7).reverse().map(m => m.data.split('-').reverse().slice(0,1)),
-                    datasets: [{ label: 'R$', data: dados.slice(0,7).reverse().map(m => m.valor), borderColor: '#3b82f6', tension: 0.3 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-            
-            if(document.getElementById('relatorios').classList.contains('active')) {
-                const ctxP = document.getElementById('chartPie').getContext('2d');
-                const cats = {}; dados.forEach(m => { if(m.tipo==='despesa') cats[m.cat] = (cats[m.cat]||0) + m.valor; });
-                if(charts.pie) charts.pie.destroy();
-                charts.pie = new Chart(ctxP, {
-                    type: 'doughnut',
-                    data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444'] }] }
-                });
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+            if(tabId !== 'add') {
+                document.getElementById('finance-form').reset();
+                document.getElementById('edit-id').value = '';
+                document.getElementById('btn-save').innerText = 'Salvar na Nuvem';
+                document.getElementById('form-title').innerText = 'Novo Lançamento';
             }
         }
 
-        window.onload = () => { document.getElementById('f-data').valueAsDate = new Date(); };
+        document.getElementById('finance-form').onsubmit = (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const id = editId || Date.now();
+            const payload = {
+                id,
+                desc: document.getElementById('desc').value,
+                valor: parseFloat(document.getElementById('valor').value),
+                tipo: document.getElementById('tipo').value,
+                cat: document.getElementById('cat').value,
+                data: document.getElementById('data').value
+            };
+            db.child(id).set(payload);
+            switchTab('home', document.querySelector('.nav-item'));
+        };
+
+        db.on('value', (s) => {
+            dataList = s.val() ? Object.values(s.val()) : [];
+            updateUI();
+        });
+
+        function updateUI() {
+            const start = document.getElementById('f-start').value;
+            const end = document.getElementById('f-end').value;
+            
+            let filtered = dataList;
+            if(start && end) {
+                filtered = dataList.filter(i => i.data >= start && i.data <= end);
+            }
+
+            let r = 0, d = 0;
+            const list = document.getElementById('lista-transacoes');
+            const metrics = document.getElementById('metrics-container');
+            list.innerHTML = '';
+            metrics.innerHTML = '';
+
+            const cats = {};
+            filtered.sort((a,b) => new Date(b.data) - new Date(a.data)).forEach(item => {
+                if(item.tipo === 'receita') r += item.valor; else {
+                    d += item.valor;
+                    cats[item.cat] = (cats[item.cat] || 0) + item.valor;
+                }
+                
+                const catClass = 'cat-' + item.cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                list.innerHTML += `
+                    <div class="card" style="display:flex; align-items:center; margin-bottom:10px; padding:12px;">
+                        <div style="flex:1">
+                            <div style="font-weight:500">${item.desc}</div>
+                            <div class="cat-tag ${catClass}">${item.cat}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-weight:600; color:${item.tipo==='receita'?'#10b981':'#f43f5e'}">
+                                ${item.tipo==='receita'?'+':'-'}R$ ${item.valor.toFixed(2)}
+                            </div>
+                            <div style="margin-top:5px; color:#64748b;">
+                                <i class="fas fa-edit" onclick="editar('${item.id}')" style="margin-right:10px;"></i>
+                                <i class="fas fa-trash" onclick="deletar('${item.id}')"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Update Header
+            document.getElementById('bal-total').innerText = `R$ ${(r-d).toFixed(2)}`;
+            document.getElementById('bal-rec').innerText = `R$ ${r.toFixed(2)}`;
+            document.getElementById('bal-des').innerText = `R$ ${d.toFixed(2)}`;
+            document.getElementById('score-val').innerText = r > 0 ? Math.max(0, Math.round(100 - (d/r * 100))) : 0;
+
+            // Render Metrics (%)
+            Object.keys(cats).forEach(c => {
+                const perc = ((cats[c] / d) * 100).toFixed(1);
+                metrics.innerHTML += `
+                    <div class="metric-item">
+                        <span style="width:80px">${c}</span>
+                        <div class="metric-bar"><div class="metric-fill" style="width:${perc}%"></div></div>
+                        <span>${perc}%</span>
+                    </div>
+                `;
+            });
+
+            renderCharts(filtered);
+        }
+
+        function editar(id) {
+            const item = dataList.find(i => i.id == id);
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('desc').value = item.desc;
+            document.getElementById('valor').value = item.valor;
+            document.getElementById('tipo').value = item.tipo;
+            document.getElementById('cat').value = item.cat;
+            document.getElementById('data').value = item.data;
+            document.getElementById('btn-save').innerText = 'Atualizar';
+            document.getElementById('form-title').innerText = 'Editar Lançamento';
+            switchTab('add', document.querySelectorAll('.nav-item')[1]);
+        }
+
+        function deletar(id) { if(confirm("Apagar?")) db.child(id).remove(); }
+
+        function renderCharts(dados) {
+            // Chart Fluxo
+            const ctxF = document.getElementById('chartFluxo').getContext('2d');
+            if(charts.fluxo) charts.fluxo.destroy();
+            charts.fluxo = new Chart(ctxF, {
+                type: 'bar',
+                data: {
+                    labels: ['Resumo'],
+                    datasets: [
+                        { label: 'Entradas', data: [dados.filter(i=>i.tipo==='receita').reduce((a,b)=>a+b.valor,0)], backgroundColor: '#10b981', borderRadius: 10 },
+                        { label: 'Saídas', data: [dados.filter(i=>i.tipo==='despesa').reduce((a,b)=>a+b.valor,0)], backgroundColor: '#f43f5e', borderRadius: 10 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            // Pie Charts
+            const renderPie = (canvasId, type) => {
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                const cData = {};
+                dados.filter(i => i.tipo === type).forEach(i => cData[i.cat] = (cData[i.cat] || 0) + i.valor);
+                if(charts[canvasId]) charts[canvasId].destroy();
+                charts[canvasId] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(cData), datasets: [{ data: Object.values(cData), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'] }] },
+                    options: { plugins: { legend: { display: false } }, cutout: '70%' }
+                });
+            };
+            renderPie('chartGanhos', 'receita');
+            renderPie('chartGastos', 'despesa');
+        }
+
+        async function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Relatório Financeiro Familiar", 14, 15);
+            const rows = dataList.map(i => [i.data, i.desc, i.cat, i.tipo === 'receita' ? '+' + i.valor : '-' + i.valor]);
+            doc.autoTable({ head: [['Data', 'Item', 'Categoria', 'Valor']], body: rows, startY: 25 });
+            doc.save("relatorio_financas.pdf");
+        }
+
+        window.onload = () => { document.getElementById('data').valueAsDate = new Date(); };
     </script>
 </body>
 </html>
