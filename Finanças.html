@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finanças Pro | Cloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary: #3b82f6; --bg: #0f172a; --card-bg: rgba(255, 255, 255, 0.05); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        
+        body { background-color: var(--bg); color: #fff; height: 100vh; overflow: hidden; }
+
+        /* Estrutura Principal */
+        .app-container { display: flex; height: 100vh; width: 100vw; }
+
+        /* Sidebar (Desktop) */
+        .sidebar { width: 260px; background: #1e293b; padding: 2rem; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.1); }
+        
+        /* Menu Inferior (Mobile) */
+        .mobile-nav { display: none; position: fixed; bottom: 0; width: 100%; background: #1e293b; height: 70px; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; justify-content: space-around; align-items: center; }
+
+        .content-area { flex: 1; overflow-y: auto; padding: 1.5rem; padding-bottom: 80px; /* Espaço para o menu mobile */ }
+
+        /* Botões de Navegação */
+        .nav-link { background: none; border: none; color: #94a3b8; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-radius: 12px; transition: 0.3s; font-size: 1rem; text-decoration: none; }
+        .nav-link.active { background: rgba(59, 130, 246, 0.2); color: #fff; }
+        .mobile-nav .nav-link { flex-direction: column; gap: 4px; font-size: 0.7rem; padding: 10px; }
+        .mobile-nav .nav-link i { font-size: 1.2rem; }
+
+        /* Cartões e Layout */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .card { background: var(--card-bg); padding: 1rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+        .card span { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
+        .card h2 { font-size: 1.2rem; margin-top: 5px; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+        .glass-box { background: var(--card-bg); border-radius: 16px; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Tabela Responsiva */
+        .scroll-table { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th { text-align: left; padding: 10px; color: #94a3b8; font-size: 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        td { padding: 12px 10px; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* Formulário */
+        .input-group { margin-bottom: 1rem; }
+        input, select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; color: #fff; margin-top: 5px; }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* REGRAS PARA CELULAR */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .mobile-nav { display: flex; }
+            .content-area { padding: 1rem; padding-bottom: 90px; }
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2 style="color:var(--primary); margin-bottom:2rem;"><i class="fas fa-wallet"></i> Finanças</h2>
+            <button class="nav-link active" onclick="switchTab('dashboard', this)"><i class="fas fa-home"></i> Início</button>
+            <button class="nav-link" onclick="switchTab('relatorios', this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
+            <button class="nav-link" onclick="switchTab('lancamentos', this)"><i class="fas fa-plus-circle"></i> Novo</button>
+        </aside>
+
+        <nav class="mobile-nav">
+            <button class="nav-link active" onclick="switchTab('dashboard', this)"><i class="fas fa-home"></i> Início</button>
+            <button class="nav-link" onclick="switchTab('relatorios', this)"><i class="fas fa-chart-pie"></i> Gráficos</button>
+            <button class="nav-link" onclick="switchTab('lancamentos', this)"><i class="fas fa-plus-circle"></i> Novo</button>
+        </nav>
+
+        <main class="content-area">
+            <section id="dashboard" class="tab-content active">
+                <div class="grid">
+                    <div class="card"><span>Saldo</span><h2 id="card-saldo">R$ 0,00</h2></div>
+                    <div class="card"><span>Saúde</span><h2 id="score-val" style="color:#3b82f6">--</h2></div>
+                    <div class="card"><span>Entradas</span><h2 id="card-rec" style="color:#10b981">R$ 0,00</h2></div>
+                    <div class="card"><span>Saídas</span><h2 id="card-des" style="color:#f43f5e">R$ 0,00</h2></div>
+                </div>
+
+                <div class="glass-box"><canvas id="chartEvolucao" style="max-height:200px;"></canvas></div>
+
+                <div class="glass-box">
+                    <h3 style="margin-bottom:1rem; font-size:1rem;">Histórico</h3>
+                    <div class="scroll-table">
+                        <table>
+                            <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="relatorios" class="tab-content">
+                <div class="glass-box"><h4>Gastos por Categoria</h4><canvas id="chartPie"></canvas></div>
+                <div class="glass-box"><h4>Balanço Mensal</h4><canvas id="chartBar"></canvas></div>
+            </section>
+
+            <section id="lancamentos" class="tab-content">
+                <div class="glass-box">
+                    <h3>Novo Registro</h3><br>
+                    <form id="form-finance">
+                        <div class="input-group"><label>O que foi?</label><input type="text" id="f-desc" required></div>
+                        <div class="input-group"><label>Quanto?</label><input type="number" step="0.01" id="f-valor" required></div>
+                        <div class="input-group">
+                            <label>Tipo</label>
+                            <select id="f-tipo"><option value="receita">Receita (+)</option><option value="despesa">Despesa (-)</option></select>
+                        </div>
+                        <div class="input-group">
+                            <label>Categoria</label>
+                            <select id="f-cat">
+                                <option>Alimentação</option><option>Salário</option><option>Moradia</option>
+                                <option>Transporte</option><option>Lazer</option><option>Outros</option>
+                            </select>
+                        </div>
+                        <div class="input-group"><label>Data</label><input type="date" id="f-data" required></div>
+                        <button type="submit" class="btn">Salvar na Nuvem</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // === CONFIGURAÇÃO FIREBASE ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyAP1tmLggzgyOtDeXu3MEtFXCVI5GJGPPk",
+            authDomain: "financeiro-f5b93.firebaseapp.com",
+            databaseURL: "https://financeiro-f5b93-default-rtdb.firebaseio.com",
+            projectId: "financeiro-f5b93",
+            storageBucket: "financeiro-f5b93.firebasestorage.app",
+            messagingSenderId: "1006424381126",
+            appId: "1:1006424381126:web:dfd6893d0991a5013aa9c7"
+        };
+        // ============================
+
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref('meu_fluxo');
+        let transactions = [];
+        let charts = {};
+
+        dbRef.on('value', (s) => {
+            const val = s.val();
+            transactions = val ? Object.values(val) : [];
+            updateUI();
+        });
+
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // Ativa botão no menu desktop e mobile simultaneamente
+            document.querySelectorAll(`button[onclick*="${id}"]`).forEach(b => b.classList.add('active'));
+            if(id === 'relatorios') updateUI();
+        }
+
+        document.getElementById('form-finance').onsubmit = (e) => {
+            e.preventDefault();
+            const id = Date.now();
+            const data = {
+                id,
+                desc: document.getElementById('f-desc').value,
+                valor: parseFloat(document.getElementById('f-valor').value),
+                tipo: document.getElementById('f-tipo').value,
+                cat: document.getElementById('f-cat').value,
+                data: document.getElementById('f-data').value
+            };
+            firebase.database().ref('meu_fluxo/' + id).set(data);
+            document.getElementById('form-finance').reset();
+            switchTab('dashboard');
+        };
+
+        function deleteMov(id) {
+            if(confirm("Apagar?")) firebase.database().ref('meu_fluxo/' + id).remove();
+        }
+
+        function updateUI() {
+            let rec = 0, des = 0;
+            const body = document.getElementById('table-body');
+            body.innerHTML = '';
+
+            const sorted = transactions.sort((a,b) => new Date(b.data) - new Date(a.data));
+
+            sorted.forEach(m => {
+                if(m.tipo === 'receita') rec += m.valor; else des += m.valor;
+                body.innerHTML += `<tr>
+                    <td>${m.data.split('-').reverse().slice(0,2).join('/')}</td>
+                    <td>${m.desc}</td>
+                    <td style="color:${m.tipo==='receita'?'#10b981':'#f43f5e'}">${m.tipo==='receita'?'+':'-'}${m.valor.toFixed(2)}</td>
+                    <td><i class="fas fa-trash" onclick="deleteMov(${m.id})"></i></td>
+                </tr>`;
+            });
+
+            document.getElementById('card-saldo').innerText = `R$ ${(rec-des).toFixed(2)}`;
+            document.getElementById('card-rec').innerText = `R$ ${rec.toFixed(2)}`;
+            document.getElementById('card-des').innerText = `R$ ${des.toFixed(2)}`;
+            
+            const score = rec > 0 ? Math.max(0, Math.round(100 - (des/rec * 100))) : 0;
+            document.getElementById('score-val').innerText = score;
+
+            renderCharts(sorted, rec, des);
+        }
+
+        function renderCharts(dados, rec, des) {
+            const ctxL = document.getElementById('chartEvolucao').getContext('2d');
+            if(charts.line) charts.line.destroy();
+            charts.line = new Chart(ctxL, {
+                type: 'line',
+                data: {
+                    labels: dados.slice(0,7).reverse().map(m => m.data.split('-').reverse().slice(0,1)),
+                    datasets: [{ label: 'R$', data: dados.slice(0,7).reverse().map(m => m.valor), borderColor: '#3b82f6', tension: 0.3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+            
+            if(document.getElementById('relatorios').classList.contains('active')) {
+                const ctxP = document.getElementById('chartPie').getContext('2d');
+                const cats = {}; dados.forEach(m => { if(m.tipo==='despesa') cats[m.cat] = (cats[m.cat]||0) + m.valor; });
+                if(charts.pie) charts.pie.destroy();
+                charts.pie = new Chart(ctxP, {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444'] }] }
+                });
+            }
+        }
+
+        window.onload = () => { document.getElementById('f-data').valueAsDate = new Date(); };
+    </script>
+</body>
+</html>
