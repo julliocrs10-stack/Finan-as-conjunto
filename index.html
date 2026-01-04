@@ -42,14 +42,21 @@
         .tab { display: none; }
         .tab.active { display: block; animation: fadeIn 0.3s; }
 
-        /* Category Icons/Colors Mapping */
+        /* --- CORES DAS CATEGORIAS (Adicionadas Novas) --- */
         .cat-tag { display: flex; align-items: center; gap: 5px; font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-top: 5px; width: fit-content; }
-        .cat-alimentacao { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .cat-moradia { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-        .cat-transporte { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .cat-lazer { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-        .cat-salario { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
-        .cat-saude { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+        
+        .cat-alimentacao { background: rgba(245, 158, 11, 0.2); color: #f59e0b; } /* Laranja */
+        .cat-moradia { background: rgba(59, 130, 246, 0.2); color: #3b82f6; } /* Azul */
+        .cat-transporte { background: rgba(16, 185, 129, 0.2); color: #10b981; } /* Verde */
+        .cat-lazer { background: rgba(236, 72, 153, 0.2); color: #ec4899; } /* Rosa */
+        .cat-saude { background: rgba(244, 63, 94, 0.2); color: #f43f5e; } /* Vermelho */
+        
+        /* Novas Categorias */
+        .cat-contas { background: rgba(239, 68, 68, 0.2); color: #ef4444; } /* Vermelho Vivo */
+        .cat-investimento { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; } /* Roxo */
+        .cat-uber { background: rgba(148, 163, 184, 0.2); color: #94a3b8; } /* Cinza/Preto */
+        .cat-bonus { background: rgba(250, 204, 21, 0.2); color: #facc15; } /* Ouro */
+        .cat-outros { background: rgba(71, 85, 105, 0.2); color: #cbd5e1; }
 
         /* Metrics List */
         .metric-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 8px; color: #94a3b8; }
@@ -115,10 +122,13 @@
                             <select id="cat">
                                 <option value="Alimentação">🍴 Alimentação</option>
                                 <option value="Moradia">🏠 Moradia</option>
+                                <option value="Contas">📄 Contas</option>
                                 <option value="Transporte">🚗 Transporte</option>
+                                <option value="Uber">🚖 Uber</option>
                                 <option value="Lazer">🎡 Lazer</option>
-                                <option value="Salário">💰 Salário</option>
                                 <option value="Saúde">🏥 Saúde</option>
+                                <option value="Investimento">📈 Investimento</option>
+                                <option value="Bonus">🎁 Bônus</option>
                                 <option value="Outros">📦 Outros</option>
                             </select>
                         </div>
@@ -159,7 +169,7 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO FIREBASE
+        // SUAS CHAVES (Mantidas do seu código anterior)
         const firebaseConfig = {
             apiKey: "AIzaSyAP1tmLggzgyOtDeXu3MEtFXCVI5GJGPPk",
             authDomain: "financeiro-f5b93.firebaseapp.com",
@@ -186,6 +196,8 @@
                 document.getElementById('edit-id').value = '';
                 document.getElementById('btn-save').innerText = 'Salvar na Nuvem';
                 document.getElementById('form-title').innerText = 'Novo Lançamento';
+                // Reset data para hoje no form se mudar de aba
+                document.getElementById('data').valueAsDate = new Date();
             }
         }
 
@@ -211,6 +223,7 @@
         });
 
         function updateUI() {
+            // Pega os valores do filtro (já definidos no window.onload)
             const start = document.getElementById('f-start').value;
             const end = document.getElementById('f-end').value;
             
@@ -225,14 +238,19 @@
             list.innerHTML = '';
             metrics.innerHTML = '';
 
-            const cats = {};
+            const cats = {}; // Para calcular %
             filtered.sort((a,b) => new Date(b.data) - new Date(a.data)).forEach(item => {
-                if(item.tipo === 'receita') r += item.valor; else {
+                if(item.tipo === 'receita') {
+                    r += item.valor; 
+                } else {
                     d += item.valor;
                     cats[item.cat] = (cats[item.cat] || 0) + item.valor;
                 }
                 
-                const catClass = 'cat-' + item.cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                // Normaliza classe CSS para categorias com acentos
+                const catClass = 'cat-' + item.cat.toLowerCase()
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
                 list.innerHTML += `
                     <div class="card" style="display:flex; align-items:center; margin-bottom:10px; padding:12px;">
                         <div style="flex:1">
@@ -252,7 +270,6 @@
                 `;
             });
 
-            // Update Header
             document.getElementById('bal-total').innerText = `R$ ${(r-d).toFixed(2)}`;
             document.getElementById('bal-rec').innerText = `R$ ${r.toFixed(2)}`;
             document.getElementById('bal-des').innerText = `R$ ${d.toFixed(2)}`;
@@ -295,7 +312,7 @@
             charts.fluxo = new Chart(ctxF, {
                 type: 'bar',
                 data: {
-                    labels: ['Resumo'],
+                    labels: ['Balanço do Período'],
                     datasets: [
                         { label: 'Entradas', data: [dados.filter(i=>i.tipo==='receita').reduce((a,b)=>a+b.valor,0)], backgroundColor: '#10b981', borderRadius: 10 },
                         { label: 'Saídas', data: [dados.filter(i=>i.tipo==='despesa').reduce((a,b)=>a+b.valor,0)], backgroundColor: '#f43f5e', borderRadius: 10 }
@@ -304,18 +321,29 @@
                 options: { responsive: true, plugins: { legend: { display: false } } }
             });
 
-            // Pie Charts
+            // Pie Charts (Ganhos e Gastos)
             const renderPie = (canvasId, type) => {
                 const ctx = document.getElementById(canvasId).getContext('2d');
                 const cData = {};
                 dados.filter(i => i.tipo === type).forEach(i => cData[i.cat] = (cData[i.cat] || 0) + i.valor);
+                
                 if(charts[canvasId]) charts[canvasId].destroy();
+                
                 charts[canvasId] = new Chart(ctx, {
                     type: 'doughnut',
-                    data: { labels: Object.keys(cData), datasets: [{ data: Object.values(cData), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'] }] },
+                    data: { 
+                        labels: Object.keys(cData), 
+                        datasets: [{ 
+                            data: Object.values(cData), 
+                            // Cores expandidas para as novas categorias
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#94a3b8', '#facc15', '#cbd5e1'] 
+                        }] 
+                    },
                     options: { plugins: { legend: { display: false } }, cutout: '70%' }
                 });
             };
+            
+            // Renderiza ambos os gráficos de rosca
             renderPie('chartGanhos', 'receita');
             renderPie('chartGastos', 'despesa');
         }
@@ -329,7 +357,19 @@
             doc.save("relatorio_financas.pdf");
         }
 
-        window.onload = () => { document.getElementById('data').valueAsDate = new Date(); };
+        // --- FILTRO AUTOMÁTICO (Dia 1 até Hoje) ---
+        window.onload = () => {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            document.getElementById('data').valueAsDate = today; // Data padrão no form
+            
+            // Define o filtro visualmente
+            document.getElementById('f-start').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('f-end').value = today.toISOString().split('T')[0];
+            
+            // Nota: O updateUI será chamado automaticamente quando o Firebase carregar os dados
+        };
     </script>
 </body>
 </html>
